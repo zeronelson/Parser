@@ -1,50 +1,122 @@
+# Functionality: Loop for each file and parse the data we want and append to same excel sheet
 import pandas as pd
 import json 
 import xlwings as xw
 import sys
 
-exit = False
-row = 0
-while (exit != True):
+tryPathCounter = 0
+margin = -1000 
+sign = 1
+newMinValue = 1
+previous_value = None
+current_value = None
+
+offset = {
+    "CarrierRackHeight" : -12500,
+    "ConveyorHeight" : -12500, 
+    "DryStationHeight" : -1000, 
+    "FlipperHeight" : -20000,
+    "EscalatorTubeHeight" : 2000,
+    "OpenTubeStationHeight" : -12500,
+    "ResuspensionTubeHeight" : 1000, 
+    "StainBath" : -21000,
+    "TubeRackHeight" : -12500
+}
+
+print("\n***Enter 0 to quit whenever prompted***")
+
+desiredLocation = input("\nEnter named position with space between words:  ")
+
+desiredLocation = desiredLocation.title() 
+
+desiredLocation = desiredLocation.replace(" ","")
+
+while desiredLocation not in offset:
+    print("\n***Invalid location***")
+    desiredLocation = input("\nEnter named position with space between words: ")
+    desiredLocation = desiredLocation.title() 
+
+    desiredLocation = desiredLocation.replace(" ","")
+
+while True:
     targetFile = input("\nPath to JSON file: ")
 
-    # Load JSON as a dictionary 
-    try: 
-        with open(targetFile, 'r') as file:
-            data = json.load(file) 
-    except FileNotFoundError:
-            print("\n***Specified path does not exist***")
-            sys.exit()
+    if (targetFile == '0'):
+        print("Exiting...")
+        break
 
-    desiredData = data['TubeRobotZAxis']['NamedPositions']['CarrierRackHeight'] # Path to data we want
+    # Load JSON as a dictionary 
+    while True:
+        try: 
+            with open(targetFile, 'r') as file:
+                data = json.load(file) 
+                break
+        except FileNotFoundError:
+                tryPathCounter += 1
+                if (tryPathCounter == 2):
+                    print("\nExiting...")
+                    sys.exit()
+                else:
+                    print("\n***Specified path does not exist***")
+                    print("\n**One more chance, so make it right**")
+                
+        targetFile = input("\nPath to JSON file: ")
+        if (targetFile == 0):
+            break
+        
+    # Parse module from path
+    splitTargetFile = targetFile.split("\\")
+
+    module = splitTargetFile[6]
+
+    # Path to data we want
+    desiredData = data['TubeRobotZAxis']['NamedPositions'][desiredLocation] 
+
+    desiredData = desiredData * 1000
 
     # Create dictionary that will be sent to excel
     desiredDataFrame = {
-        'Value': desiredData
+        'Module': [module],
+        desiredLocation: [desiredData],
+        'Offset' : [offset[desiredLocation]],
+        'Margin' : [margin],
+        'Sign' : [sign],
+        'Datum' : [(desiredData + margin) * sign]
     }
-    print(desiredDataFrame)
 
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
-    frame = pd.DataFrame.from_dict(desiredDataFrame, orient='index')
+    frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
     # Open existing excel sheet
-    existingFrame = pd.read_excel('output.xlsx')
+    try: 
+        existingFrame = pd.read_excel('output.xlsx')
+    except: 
+        print("File does not exist.")
+        continue
 
-    # Needed this in order to overwrite excel sheet since it can't be done while open. So open it and close it. 
+    # Can't write to open sheet, so this opens and closes if present 
     try: 
         excel = xw.Book('output.xlsx')
         excel.close()
-    except Exception as e:
-        print (e)
+    except:
+        print("File does not exist.")
 
-    # Insert data into specified row and column 
-    existingFrame.iloc[row,1] = desiredData
+    current_value = frame['Datum'].min()
+
+    if (previous_value is not None):
+        if (previous_value > current_value):
+            newMinValue = current_value
+            frame.loc[0, 'Datum Min'] = [newMinValue]
+
+    previous_value = current_value
+
+# Append new frame to existing frame
+    if (not existingFrame.empty):
+        df_combined = existingFrame._append(frame, ignore_index = True)
+        df_combined.to_excel('output.xlsx', index=False)
+    else:
+        frame.to_excel('output.xlsx', index=False)
     
-    # Since we are entering multiple entries, move on to next row
-    row += 1
+    
 
-    # Append new frame to existing frame 
-    df_combined = existingFrame._append(frame, ignore_index = True)
 
-    # Output to excel sheet
-    df_combined.to_excel('output.xlsx', index=False)
