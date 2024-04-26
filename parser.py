@@ -3,6 +3,7 @@ import pandas as pd
 import json 
 import xlwings as xw
 import sys
+import os
 
 count = 0
 tryPathCounter = 0
@@ -105,8 +106,8 @@ while True:
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
     # Open existing excel sheet otherwise create empty frame 
-    try: 
-        existingFrame = pd.read_excel(outputFile)
+    try:
+        existingFrame = pd.read_excel(outputFile, sheet_name=procedures[desiredLocation])
     except: 
         existingFrame = pd.DataFrame() 
 
@@ -135,14 +136,23 @@ while True:
     count += 1
 
     #Create Excel Writer 
-    with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
 
-        # Append new frame to existing frame
-        if (not existingFrame.empty):
-            df_combined = existingFrame._append(frame, ignore_index = True)
-            df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-        else:
-            frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+    if os.path.exists(outputFile):
+        with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
+            if (not existingFrame.empty): 
+                df_combined = existingFrame._append(frame, ignore_index = True)
+                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+            else:
+                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+    else: 
+        with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+            # Append new frame to existing frame
+            if (not existingFrame.empty):
+                df_combined = existingFrame._append(frame, ignore_index = True)
+                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+            else:
+                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+
         
 
 datumAvg = round((datumTotal / count))
@@ -151,28 +161,17 @@ datumAvg = round((datumTotal / count))
 calcFrame = pd.DataFrame(
     {
         'Datum Avg': [datumAvg],
-        'Datum Min': [minValue],
-        'Datum Delta': [datumAvg - minValue]
+        'Datum Min': [round(minValue)],
+        'Datum Delta': [round(datumAvg - minValue)]
     }
 )
 
+
 #Create Excel Writer 
-with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-    if (not existingFrame.empty):
-        df_combined = existingFrame._append(frame, ignore_index = True)
-        finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    else:
-        finalFrame = pd.concat([frame, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    
-    # Access sheet to set column size 
-    workbook = writer.book
-    worksheet = writer.sheets[procedures[desiredLocation]]
-
-    locationLen = len(desiredLocation)
-    
-    worksheet.set_column(1,1, locationLen)
-    worksheet.set_column(7,9,12)
-
-
+if (not existingFrame.empty):
+    df_combined = existingFrame._append(frame, ignore_index = True)
+    finalFrame = pd.concat([df_combined, calcFrame], axis=1)
+    finalFrame.to_excel(outputFile, index=False)
+else:
+    finalFrame = pd.concat([frame, calcFrame], axis=1)
+    finalFrame.to_excel(outputFile, index=False)
