@@ -4,12 +4,14 @@ import json
 import xlwings as xw
 import sys
 
+count = 0
 tryPathCounter = 0
 margin = -1000 
 sign = 1
-newMinValue = 1
+newMinValue = 0
 previous_value = None
 current_value = None
+datumTotal = 0
 
 offset = {
     "CarrierRackHeight" : -12500,
@@ -42,7 +44,7 @@ while True:
     targetFile = input("\nPath to JSON file: ")
 
     if (targetFile == '0'):
-        print("Exiting...")
+        print("\nExiting...")
         break
 
     # Load JSON as a dictionary 
@@ -81,18 +83,19 @@ while True:
         'Offset' : [offset[desiredLocation]],
         'Margin' : [margin],
         'Sign' : [sign],
-        'Datum' : [(desiredData + margin) * sign]
+        'Datum' : [(desiredData + margin) * sign],
+        '' : [None]
     }
 
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
-    # Open existing excel sheet
+
+    # Open existing excel sheet otherwise create empty frame 
     try: 
         existingFrame = pd.read_excel('output.xlsx')
     except: 
-        print("File does not exist.")
-        continue
+        existingFrame = pd.DataFrame() 
 
     # Can't write to open sheet, so this opens and closes if present 
     try: 
@@ -101,14 +104,20 @@ while True:
     except:
         print("File does not exist.")
 
+    # Compare and store minimum value
     current_value = frame['Datum'].min()
 
     if (previous_value is not None):
-        if (previous_value > current_value):
+        if (previous_value > current_value): 
             newMinValue = current_value
-            frame.loc[0, 'Datum Min'] = [newMinValue]
+        if (newMinValue > current_value):
+            newMinValue = previous_value
 
     previous_value = current_value
+
+    # Get total of all datums to calculate average 
+    datumTotal += frame.loc[0, 'Datum']
+    
 
 # Append new frame to existing frame
     if (not existingFrame.empty):
@@ -116,7 +125,17 @@ while True:
         df_combined.to_excel('output.xlsx', index=False)
     else:
         frame.to_excel('output.xlsx', index=False)
-    
-    
+
+    count += 1
+
+# TODO How can I get it in the first row? 
+frame.at[0, 'Datum Avg'] = [round((datumTotal / count))]
+frame.at[0, 'Datum Min'] = [newMinValue]
+
+if (not existingFrame.empty):
+    df_combined = existingFrame._append(frame, ignore_index = True)
+    df_combined.to_excel('output.xlsx', index=False)
+else:
+    frame.to_excel('output.xlsx', index=False)
 
 
