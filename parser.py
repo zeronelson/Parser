@@ -128,14 +128,19 @@ while True:
 
     count += 1
 
-# TODO How can I get it in the first row? 
-frame.at[0, 'Datum Avg'] = [round((datumTotal / count))]
-frame.at[0, 'Datum Min'] = [newMinValue]
+calcFrame = pd.DataFrame(
+    {
+        'Datum Avg': [round((datumTotal / count))],
+        'Datum Min': [newMinValue]
+    }
+)
 
 if (not existingFrame.empty):
     df_combined = existingFrame._append(frame, ignore_index = True)
-    df_combined.to_excel('output.xlsx', index=False)
+    finalFrame = pd.concat([df_combined, calcFrame], axis=1)
+    finalFrame.to_excel('output.xlsx', index=False)
 else:
-    frame.to_excel('output.xlsx', index=False)
+    finalFrame = pd.concat([frame, calcFrame], axis=1)
+    finalFrame.to_excel('output.xlsx', index=False)
 
 
