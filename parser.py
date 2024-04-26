@@ -8,10 +8,11 @@ count = 0
 tryPathCounter = 0
 margin = -1000 
 sign = 1
-newMinValue = 0
+minValue = 0
 previous_value = None
 current_value = None
 datumTotal = 0
+outputFile = 'output.xlsx'
 
 offset = {
     "CarrierRackHeight" : -12500,
@@ -93,13 +94,13 @@ while True:
 
     # Open existing excel sheet otherwise create empty frame 
     try: 
-        existingFrame = pd.read_excel('output.xlsx')
+        existingFrame = pd.read_excel(outputFile)
     except: 
         existingFrame = pd.DataFrame() 
 
     # Can't write to open sheet, so this opens and closes if present 
     try: 
-        excel = xw.Book('output.xlsx')
+        excel = xw.Book(outputFile)
         excel.close()
     except:
         print("File does not exist.")
@@ -109,9 +110,9 @@ while True:
 
     if (previous_value is not None):
         if (previous_value > current_value): 
-            newMinValue = current_value
-        if (newMinValue > current_value):
-            newMinValue = previous_value
+            minValue = current_value
+        if (minValue > current_value):
+            minValue = previous_value
 
     previous_value = current_value
 
@@ -119,28 +120,30 @@ while True:
     datumTotal += frame.loc[0, 'Datum']
     
 
-# Append new frame to existing frame
+    # Append new frame to existing frame
     if (not existingFrame.empty):
         df_combined = existingFrame._append(frame, ignore_index = True)
-        df_combined.to_excel('output.xlsx', index=False)
+        df_combined.to_excel(outputFile, index=False)
     else:
-        frame.to_excel('output.xlsx', index=False)
+        frame.to_excel(outputFile, index=False)
 
     count += 1
 
+    datumAvg = round((datumTotal / count))
 calcFrame = pd.DataFrame(
     {
-        'Datum Avg': [round((datumTotal / count))],
-        'Datum Min': [newMinValue]
+        'Datum Avg': [datumAvg],
+        'Datum Min': [minValue],
+        'Datum Delta': [datumAvg - minValue]
     }
 )
 
 if (not existingFrame.empty):
     df_combined = existingFrame._append(frame, ignore_index = True)
     finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-    finalFrame.to_excel('output.xlsx', index=False)
+    finalFrame.to_excel(outputFile, index=False)
 else:
     finalFrame = pd.concat([frame, calcFrame], axis=1)
-    finalFrame.to_excel('output.xlsx', index=False)
+    finalFrame.to_excel(outputFile, index=False)
 
 
