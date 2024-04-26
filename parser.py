@@ -64,12 +64,13 @@ while True:
                     print("\n**One more chance, so make it right**")
                 
         targetFile = input("\nPath to JSON file: ")
+
         if (targetFile == 0):
             break
         
     # Parse module from path
     splitTargetFile = targetFile.split("\\")
-
+ 
     module = splitTargetFile[6]
 
     # Path to data we want
@@ -91,7 +92,6 @@ while True:
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
-
     # Open existing excel sheet otherwise create empty frame 
     try: 
         existingFrame = pd.read_excel(outputFile)
@@ -103,7 +103,7 @@ while True:
         excel = xw.Book(outputFile)
         excel.close()
     except:
-        print("File does not exist.")
+        pass
 
     # Compare and store minimum value
     current_value = frame['Datum'].min()
@@ -113,23 +113,28 @@ while True:
             minValue = current_value
         if (minValue > current_value):
             minValue = previous_value
-
+    else:
+        minValue = current_value
+        
     previous_value = current_value
 
     # Get total of all datums to calculate average 
     datumTotal += frame.loc[0, 'Datum']
-    
-
-    # Append new frame to existing frame
-    if (not existingFrame.empty):
-        df_combined = existingFrame._append(frame, ignore_index = True)
-        df_combined.to_excel(outputFile, index=False)
-    else:
-        frame.to_excel(outputFile, index=False)
-
     count += 1
 
-    datumAvg = round((datumTotal / count))
+    #Create Excel Writer 
+    with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+
+        # Append new frame to existing frame
+        if (not existingFrame.empty):
+            df_combined = existingFrame._append(frame, ignore_index = True)
+            df_combined.to_excel(writer, sheet_name='Sheet1', index=False)
+        else:
+            frame.to_excel(writer, sheet_name='Sheet1', index=False)
+        
+
+datumAvg = round((datumTotal / count))
+
 calcFrame = pd.DataFrame(
     {
         'Datum Avg': [datumAvg],
@@ -138,12 +143,22 @@ calcFrame = pd.DataFrame(
     }
 )
 
-if (not existingFrame.empty):
-    df_combined = existingFrame._append(frame, ignore_index = True)
-    finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-    finalFrame.to_excel(outputFile, index=False)
-else:
-    finalFrame = pd.concat([frame, calcFrame], axis=1)
-    finalFrame.to_excel(outputFile, index=False)
+#Create Excel Writer 
+with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+    if (not existingFrame.empty):
+        df_combined = existingFrame._append(frame, ignore_index = True)
+        finalFrame = pd.concat([df_combined, calcFrame], axis=1)
+        finalFrame.to_excel(writer, sheet_name="Sheet1", index=False)
+    else:
+        finalFrame = pd.concat([frame, calcFrame], axis=1)
+        finalFrame.to_excel(writer, sheet_name="Sheet1", index=False)
+    
+    workbook = writer.book
+    worksheet = writer.sheets['Sheet1']
+
+    locationLen = len(desiredLocation)
+    
+    worksheet.set_column(1,1, locationLen)
+    worksheet.set_column(7,9,12)
 
 
