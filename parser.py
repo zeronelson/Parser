@@ -26,19 +26,31 @@ offset = {
     "TubeRackHeight" : -12500
 }
 
+procedures = {
+    "CarrierRackHeight": "Racks",
+    "ConveyorHeight": "Conveyor",
+    "DryStationHeight" :"Dry Station", 
+    "FlipperHeight" : "Flipper",
+    "EscalatorTubeHeight" : "Escalator",
+    "OpenTubeStationHeight" : "Open Tube Station",
+    "ResuspensionTubeHeight" : "Resuspension", 
+    "StainBath" : "StainBath",
+    "TubeRackHeight" : "Tubes"
+}
+
 print("\n***Enter 0 to quit whenever prompted***")
 
 desiredLocation = input("\nEnter named position with space between words:  ")
 
 desiredLocation = desiredLocation.title() 
 
+# Cut out space in between words
 desiredLocation = desiredLocation.replace(" ","")
 
 while desiredLocation not in offset:
     print("\n***Invalid location***")
     desiredLocation = input("\nEnter named position with space between words: ")
     desiredLocation = desiredLocation.title() 
-
     desiredLocation = desiredLocation.replace(" ","")
 
 while True:
@@ -81,7 +93,7 @@ while True:
     # Create dictionary that will be sent to excel
     desiredDataFrame = {
         'Module': [module],
-        desiredLocation: [desiredData],
+        desiredLocation: [round(desiredData)],
         'Offset' : [offset[desiredLocation]],
         'Margin' : [margin],
         'Sign' : [sign],
@@ -115,7 +127,7 @@ while True:
             minValue = previous_value
     else:
         minValue = current_value
-        
+
     previous_value = current_value
 
     # Get total of all datums to calculate average 
@@ -128,13 +140,14 @@ while True:
         # Append new frame to existing frame
         if (not existingFrame.empty):
             df_combined = existingFrame._append(frame, ignore_index = True)
-            df_combined.to_excel(writer, sheet_name='Sheet1', index=False)
+            df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
         else:
-            frame.to_excel(writer, sheet_name='Sheet1', index=False)
+            frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
         
 
 datumAvg = round((datumTotal / count))
 
+# Create Data Frame 
 calcFrame = pd.DataFrame(
     {
         'Datum Avg': [datumAvg],
@@ -148,13 +161,14 @@ with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer:
     if (not existingFrame.empty):
         df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name="Sheet1", index=False)
+        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
     else:
         finalFrame = pd.concat([frame, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name="Sheet1", index=False)
+        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
     
+    # Access sheet to set column size 
     workbook = writer.book
-    worksheet = writer.sheets['Sheet1']
+    worksheet = writer.sheets[procedures[desiredLocation]]
 
     locationLen = len(desiredLocation)
     
