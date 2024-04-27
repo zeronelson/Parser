@@ -53,6 +53,20 @@ while desiredLocation not in offset:
     desiredLocation = desiredLocation.title() 
     desiredLocation = desiredLocation.replace(" ","")
 
+# Open existing Excel file or create empty DataFrame
+try: 
+    existingFrame = pd.read_excel(outputFile)
+except: 
+    existingFrame = pd.DataFrame()
+
+# Can't write to open sheet, so this opens and closes if present 
+try: 
+    excel = xw.Book(outputFile)
+    excel.close()
+except:
+    pass
+
+# Loop through each file entered 
 while True:
     targetFile = input("\nPath to JSON file: ")
 
@@ -104,19 +118,6 @@ while True:
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
-    # Open existing excel sheet otherwise create empty frame 
-    try: 
-        existingFrame = pd.read_excel(outputFile)
-    except: 
-        existingFrame = pd.DataFrame() 
-
-    # Can't write to open sheet, so this opens and closes if present 
-    try: 
-        excel = xw.Book(outputFile)
-        excel.close()
-    except:
-        pass
-
     # Compare and store minimum value
     current_value = frame['Datum'].min()
 
@@ -134,45 +135,50 @@ while True:
     datumTotal += frame.loc[0, 'Datum']
     count += 1
 
+    # Append new frame to existing frame 
+    existingFrame = existingFrame.append(frame, ignore_index=True)
+
     #Create Excel Writer 
     with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-
-        # Append new frame to existing frame
-        if (not existingFrame.empty):
-            df_combined = existingFrame._append(frame, ignore_index = True)
-            df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-        else:
-            frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
         
+        # Write the existing frame to the Excel file
+        existingFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
 
-datumAvg = round((datumTotal / count))
+        # Access the worksheet to set column size 
+        workbook = writer.book
+        worksheet = writer.sheets[procedures[desiredLocation]]
 
-# Create Data Frame 
-calcFrame = pd.DataFrame(
-    {
-        'Datum Avg': [datumAvg],
-        'Datum Min': [minValue],
-        'Datum Delta': [datumAvg - minValue]
-    }
-)
+        # Get length of column name for desiredLocations 
+        locationLen = len(desiredLoation)
 
-#Create Excel Writer 
-with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-    if (not existingFrame.empty):
-        df_combined = existingFrame._append(frame, ignore_index = True)
-        finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    else:
-        finalFrame = pd.concat([frame, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+        # Calculate average of datums 
+        datumAvg = round(datumTotal/count)
+
+        # Create Data Frame 
+        calcFrame = pd.DataFrame(
+            {
+                'Datum Avg': [datumAvg],
+                'Datum Min': [minValue],
+                'Datum Delta': [datumAvg - minValue]
+            }
+        )
+        
+        # Append the calculation frame to the existing frame
+        finalFrame = pd.concat([existingFrame, calcFrame], axis=1)
+
+        # Write the final frame to the Excel file 
+        with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer:
+                finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
     
-    # Access sheet to set column size 
-    workbook = writer.book
-    worksheet = writer.sheets[procedures[desiredLocation]]
-
-    locationLen = len(desiredLocation)
+        # Access the worksheet to set column size 
+        workbook = writer.book
+        worksheet = writer.sheets[procedures[desiredLocation]]
     
-    worksheet.set_column(1,1, locationLen)
-    worksheet.set_column(7,9,12)
+        locationLen = len(desiredLocation)
+        
+        worksheet.set_column(1,1, locationLen)
+        worksheet.set_column(7,9,12)
+
+        print("******DONE******"
 
 
