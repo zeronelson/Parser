@@ -4,6 +4,7 @@ import json
 import xlwings as xw
 import sys
 import os
+from openpyxl import load_workbook
 
 count = 0
 tryPathCounter = 0
@@ -146,7 +147,7 @@ while True:
             else:
                 frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
     else: 
-        with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+        with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
             # Append new frame to existing frame
             if (not existingFrame.empty):
                 df_combined = existingFrame._append(frame, ignore_index = True)
@@ -167,16 +168,21 @@ calcFrame = pd.DataFrame(
 
 #Create Excel Writer 
 #with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-""" with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
-    if (not existingFrame.empty):
+with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a', if_sheet_exists='replace') as writer: 
+    if (existingFrame.count == 0):
         df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
         finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
     else:
         finalFrame = pd.concat([frame, calcFrame], axis=1)
         finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    
-    # Access sheet to set column size 
+
+    workbook = load_workbook(outputFile)
+
+    worksheet = workbook[procedures[desiredLocation]]
+
+    worksheet.column_dimensions[desiredLocation].width = len(desiredLocation)
+    """ # Access sheet to set column size 
     workbook = writer.book
     worksheet = writer.sheets[procedures[desiredLocation]]
 
