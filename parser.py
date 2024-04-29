@@ -3,6 +3,7 @@ import pandas as pd
 import json 
 import xlwings as xw
 import sys
+import os
 
 count = 0
 tryPathCounter = 0
@@ -136,14 +137,22 @@ while True:
 
     #Create Excel Writer 
     #with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-    with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
-        # Append new frame to existing frame
-        if (not existingFrame.empty):
-            df_combined = existingFrame._append(frame, ignore_index = True)
-            df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-        else:
-            frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-        
+    if os.path.exists(outputFile):
+        with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
+            # Append new frame to existing frame
+            if (not existingFrame.empty):
+                df_combined = existingFrame._append(frame, ignore_index = True)
+                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+            else:
+                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+    else: 
+        with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+            # Append new frame to existing frame
+            if (not existingFrame.empty):
+                df_combined = existingFrame._append(frame, ignore_index = True)
+                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+            else:
+                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)        
 
 datumAvg = round((datumTotal / count))
 
@@ -158,7 +167,7 @@ calcFrame = pd.DataFrame(
 
 #Create Excel Writer 
 #with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
+""" with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
     if (not existingFrame.empty):
         df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
@@ -174,6 +183,6 @@ with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer:
     locationLen = len(desiredLocation)
     
     worksheet.set_column(1,1, locationLen)
-    worksheet.set_column(7,9,12)
+    worksheet.set_column(7,9,12) """
 
 
