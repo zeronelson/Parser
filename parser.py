@@ -47,6 +47,19 @@ desiredLocation = desiredLocation.title()
 # Cut out space in between words
 desiredLocation = desiredLocation.replace(" ","")
 
+# Open existing excel sheet otherwise create empty frame 
+try: 
+    existingFrame = pd.read_excel(outputFile, sheet_name=[procedures[desiredLocation]])
+except: 
+    existingFrame = pd.DataFrame() 
+
+# Can't write to open sheet, so this opens and closes if present 
+try: 
+    excel = xw.Book(outputFile)
+    excel.close()
+except:
+    pass
+
 while desiredLocation not in offset:
     print("\n***Invalid location***")
     desiredLocation = input("\nEnter named position with space between words: ")
@@ -104,19 +117,6 @@ while True:
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
-    # Open existing excel sheet otherwise create empty frame 
-    try: 
-        existingFrame = pd.read_excel(outputFile)
-    except: 
-        existingFrame = pd.DataFrame() 
-
-    # Can't write to open sheet, so this opens and closes if present 
-    try: 
-        excel = xw.Book(outputFile)
-        excel.close()
-    except:
-        pass
-
     # Compare and store minimum value
     current_value = frame['Datum'].min()
 
@@ -135,8 +135,8 @@ while True:
     count += 1
 
     #Create Excel Writer 
-    with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-
+    #with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+    with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
         # Append new frame to existing frame
         if (not existingFrame.empty):
             df_combined = existingFrame._append(frame, ignore_index = True)
@@ -157,7 +157,8 @@ calcFrame = pd.DataFrame(
 )
 
 #Create Excel Writer 
-with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+#with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
+with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
     if (not existingFrame.empty):
         df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
