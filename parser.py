@@ -11,10 +11,18 @@ tryPathCounter = 0
 margin = -1000 
 sign = 1
 minValue = 0
-previous_value = None
-current_value = None
 datumTotal = 0
+datumAvg = 0
 outputFile = 'output.xlsx'
+
+# Lists for Data Frame
+moduleList = []
+positionValueList = []
+datumList = []
+marginList = []
+signList = []
+offsetList = []
+emptyList = []
 
 offset = {
     "CarrierRackHeight" : -12500,
@@ -105,57 +113,36 @@ while True:
 
     desiredData = desiredData * 1000
 
+    moduleList.append(module)
+    positionValueList.append(round(desiredData))
+    datumList.append((desiredData + margin) * sign)
+    marginList.append(margin)
+    signList.append(sign)
+    offsetList.append(offset[desiredLocation])
+    emptyList.append(None)
+
     # Create dictionary that will be sent to excel
     desiredDataFrame = {
-        'Module': [module],
-        desiredLocation: [round(desiredData)],
-        'Offset' : [offset[desiredLocation]],
-        'Margin' : [margin],
-        'Sign' : [sign],
-        'Datum' : [(desiredData + margin) * sign],
-        '' : [None]
+        'Module': moduleList,
+        desiredLocation: positionValueList,
+        'Offset' : offsetList,
+        'Margin' : marginList,
+        'Sign' : signList,
+        'Datum' : datumList,
+        '' : emptyList
     }
 
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
     # Compare and store minimum value
-    current_value = frame['Datum'].min()
-
-    if (previous_value is not None):
-        if (previous_value > current_value): 
-            minValue = current_value
-        if (minValue > current_value):
-            minValue = previous_value
-    else:
-        minValue = current_value
-
-    previous_value = current_value
+    minValue = frame['Datum'].min()
 
     # Get total of all datums to calculate average 
-    datumTotal += frame.loc[0, 'Datum']
+    datumTotal += sum(datumList)
     count += 1
 
-    #Create Excel Writer 
-    #with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-    if os.path.exists(outputFile):
-        with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
-            # Append new frame to existing frame
-            if (not existingFrame.empty):
-                df_combined = existingFrame._append(frame, ignore_index = True)
-                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-            else:
-                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    else: 
-        with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
-            # Append new frame to existing frame
-            if (not existingFrame.empty):
-                df_combined = existingFrame._append(frame, ignore_index = True)
-                df_combined.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-            else:
-                frame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)        
-
-datumAvg = round((datumTotal / count))
+    datumAvg = round((datumTotal / count))
 
 # Create Data Frame 
 calcFrame = pd.DataFrame(
@@ -167,28 +154,15 @@ calcFrame = pd.DataFrame(
 )
 
 #Create Excel Writer 
-#with pd.ExcelWriter(outputFile,engine='xlsxwriter') as writer: 
-with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a', if_sheet_exists='replace') as writer: 
-    if (existingFrame.count == 0):
+if os.path.exists(outputFile):
+    with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
+        # Append new frame to existing frame
         df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
         finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-    else:
-        finalFrame = pd.concat([frame, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
-
-    workbook = load_workbook(outputFile)
-
-    worksheet = workbook[procedures[desiredLocation]]
-
-    worksheet.column_dimensions[desiredLocation].width = len(desiredLocation)
-    """ # Access sheet to set column size 
-    workbook = writer.book
-    worksheet = writer.sheets[procedures[desiredLocation]]
-
-    locationLen = len(desiredLocation)
-    
-    worksheet.set_column(1,1, locationLen)
-    worksheet.set_column(7,9,12) """
-
+else: 
+    with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
+            # If the file doesn't exist 
+            finalFrame = pd.concat([frame, calcFrame], axis=1)
+            finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)      
 
