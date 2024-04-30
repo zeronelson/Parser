@@ -111,6 +111,7 @@ while True:
 
     if "hq" in module:
         margin = 1000
+        sign = -1
 
     # Path to data we want
     desired_data = data['TubeRobotZAxis']['NamedPositions'][desired_location]
