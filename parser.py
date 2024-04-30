@@ -105,14 +105,12 @@ while True:
         
     # Parse module from path
     splitTargetFile = targetFile.split("\\")
- 
     module = splitTargetFile[6]
 
     # Path to data we want
-    desiredData = data['TubeRobotZAxis']['NamedPositions'][desiredLocation] 
+    desiredData = round((data['TubeRobotZAxis']['NamedPositions'][desiredLocation]) * 1000)
 
-    desiredData = round(desiredData * 1000)
-
+    # Add values to list to display to excel
     moduleList.append(module)
     positionValueList.append(desiredData)
     datumList.append((desiredData + margin) * sign)
@@ -135,29 +133,27 @@ while True:
     # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
     frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
-    # Compare and store minimum value
-    minValue = frame['Datum'].min()
+# Calculation for calcFrame
+min_value = frame['Datum'].min()
+datum_sum = frame['Datum'].sum()
+num_datums = frame['Datum'].count()
+avg_datum = datum_sum / num_datums
 
-    # Get total of all datums to calculate average 
-    datumTotal += sum(datumList)
-    count += 1
-
-    datumAvg = round((datumTotal / count))
 
 # Create Data Frame 
 calcFrame = pd.DataFrame(
     {
-        'Datum Avg': [datumAvg],
-        'Datum Min': [minValue],
-        'Datum Delta': [datumAvg - minValue]
+        'Datum Avg': [avg_datum],
+        'Datum Min': [min_value],
+        'Datum Delta': [avg_datum - min_value]
     }
 )
 
 #Create Excel Writer 
 if os.path.exists(outputFile):
     with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
-        # Append new frame to existing frame
-        df_combined =existingFrame._append(frame, ignore_index = True)
+        # Todo -> Cannot write to same sheet if we run script twice with same procedure... Error with appending
+        df_combined = existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
         finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
         
@@ -170,7 +166,6 @@ if os.path.exists(outputFile):
             worksheet.column_dimensions['J'].width = 12
 else: 
     with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
-            # If the file doesn't exist 
             finalFrame = pd.concat([frame, calcFrame], axis=1)
             finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)  
 
