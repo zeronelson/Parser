@@ -9,6 +9,7 @@ count = 0
 margin = -1000 
 sign = 1
 output_file = 'output.xlsx'
+flag = None
 
 # Lists for Data Frame
 moduleList = []
@@ -100,8 +101,12 @@ while True:
 
         if ("\\" not in target_file_path):
             print("\nExiting...")
+            flag = True
             break
-        
+    
+    if flag: 
+        break
+
     # Parse module from path
     target_split = target_file_path.split("\\")
     module = target_split[6]
@@ -119,19 +124,19 @@ while True:
     offsetList.append(offset[desired_location])
     emptyList.append(None)
 
-    # Create dictionary that will be sent to excel
-    desiredDataFrame = {
-        'Module': moduleList,
-        desired_location: positionValueList,
-        'Offset' : offsetList,
-        'Margin' : marginList,
-        'Sign' : signList,
-        'Datum' : datumList,
-        '' : emptyList
-    }
+# Create dictionary that will be sent to excel
+desiredDataFrame = {
+    'Module': moduleList,
+    desired_location: positionValueList,
+    'Offset' : offsetList,
+    'Margin' : marginList,
+    'Sign' : signList,
+    'Datum' : datumList,
+    '' : emptyList
+}
 
-    # Create Data Frame from dictionary, index -> ensures key-value parsed as row 
-    frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
+# Create Data Frame from dictionary, index -> ensures key-value parsed as row 
+frame = pd.DataFrame.from_dict(desiredDataFrame, orient='columns')
 
 # Calculation for calcFrame
 min_value = frame['Datum'].min()
