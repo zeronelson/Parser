@@ -78,7 +78,7 @@ while desired_location not in offset:
 while True:
     target_file_path = input("\nPath to JSON file: ")
 
-    if (target_file_path == '0'):
+    if ("\\" not in target_file_path):
         print("\nExiting...")
         break
 
@@ -95,11 +95,11 @@ while True:
                     sys.exit()
                 else:
                     print("\n***Specified path does not exist***")
-                    print("\n**One more chance, so make it right**")
                 
         target_file_path = input("\nPath to JSON file: ")
 
-        if (target_file_path == 0):
+        if ("\\" not in target_file_path):
+            print("\nExiting...")
             break
         
     # Parse module from path
@@ -137,7 +137,8 @@ while True:
 min_value = frame['Datum'].min()
 datum_sum = frame['Datum'].sum()
 num_datums = frame['Datum'].count()
-avg_datum = datum_sum / num_datums
+avg_datum = round(datum_sum / num_datums)
+datum_delta = avg_datum - min_value
 
 
 # Create Data Frame 
@@ -145,7 +146,7 @@ calcFrame = pd.DataFrame(
     {
         'Datum Avg': [avg_datum],
         'Datum Min': [min_value],
-        'Datum Delta': [avg_datum - min_value]
+        'Datum Delta': [datum_delta]
     }
 )
 
