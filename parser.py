@@ -2,7 +2,6 @@
 import pandas as pd
 import json 
 import xlwings as xw
-import sys
 import os
 
 count = 0
@@ -109,6 +108,9 @@ while True:
     # Parse module from path
     target_split = target_file_path.split("\\")
     module = target_split[6]
+
+    if "hq" in module:
+        margin = 1000
 
     # Path to data we want
     desired_data = data['TubeRobotZAxis']['NamedPositions'][desired_location]
