@@ -66,6 +66,7 @@ except:
 # Can't write to open sheet, so this opens and closes if present 
 try: 
     excel = xw.Book(outputFile)
+    totalSheets = len(excel.sheet_names)
     excel.close()
 except:
     pass
@@ -111,10 +112,10 @@ while True:
     # Path to data we want
     desiredData = data['TubeRobotZAxis']['NamedPositions'][desiredLocation] 
 
-    desiredData = desiredData * 1000
+    desiredData = round(desiredData * 1000)
 
     moduleList.append(module)
-    positionValueList.append(round(desiredData))
+    positionValueList.append(desiredData)
     datumList.append((desiredData + margin) * sign)
     marginList.append(margin)
     signList.append(sign)
@@ -157,12 +158,27 @@ calcFrame = pd.DataFrame(
 if os.path.exists(outputFile):
     with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
         # Append new frame to existing frame
-        df_combined = existingFrame._append(frame, ignore_index = True)
+        df_combined =existingFrame._append(frame, ignore_index = True)
         finalFrame = pd.concat([df_combined, calcFrame], axis=1)
         finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+        
+        for i in range(totalSheets + 1):
+            workbook = writer.book 
+            worksheet = workbook.worksheets[i]
+            worksheet.column_dimensions['b'].width = len(desiredLocation) + 2
+            worksheet.column_dimensions['H'].width = 12
+            worksheet.column_dimensions['I'].width = 12
+            worksheet.column_dimensions['J'].width = 12
 else: 
     with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
             # If the file doesn't exist 
             finalFrame = pd.concat([frame, calcFrame], axis=1)
-            finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)      
+            finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)  
+
+            workbook = writer.book 
+            worksheet = workbook.worksheets[0]
+            worksheet.column_dimensions['b'].width = len(desiredLocation) + 2 
+            worksheet.column_dimensions['H'].width = 12
+            worksheet.column_dimensions['I'].width = 12
+            worksheet.column_dimensions['J'].width = 12  
 
