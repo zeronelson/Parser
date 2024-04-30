@@ -107,7 +107,8 @@ while True:
     module = target_split[6]
 
     # Path to data we want
-    desired_data = round((data['TubeRobotZAxis']['NamedPositions'][desired_location]) * 1000)
+    desired_data = data['TubeRobotZAxis']['NamedPositions'][desired_location]
+    desired_data = round(desired_data * 1000)
 
     # Add values to list to display to excel
     moduleList.append(module)
