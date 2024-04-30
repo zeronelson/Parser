@@ -78,7 +78,7 @@ while desired_location not in offset:
 while True:
     target_file_path = input("\nPath to JSON file: ")
 
-    if ("\\" not in target_file_path):
+    if (target_file_path == 0):
         print("\nExiting...")
         break
 
