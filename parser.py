@@ -4,7 +4,6 @@ import json
 import xlwings as xw
 import sys
 import os
-from openpyxl import load_workbook
 
 count = 0
 tryPathCounter = 0
