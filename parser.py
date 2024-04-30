@@ -60,6 +60,7 @@ get_desired_location()
 # Open existing excel sheet otherwise create empty frame 
 try: 
     existing_frame = pd.read_excel(output_file, sheet_name=[procedures[desired_location]])
+    existing_frame = pd.DataFrame.from_dict(existing_frame, orient='columns')
 except: 
     existing_frame = pd.DataFrame() 
 
@@ -67,7 +68,7 @@ except:
 try: 
     excel = xw.Book(output_file)
     # Get current sheet number and add 1 for sheet that will get added 
-    total_sheets = len(excel.sheet_names) + 1 
+    #total_sheets = len(excel.sheet_names) 
     excel.close()
 except:
     pass
@@ -157,12 +158,13 @@ calcFrame = pd.DataFrame(
 
 #Create Excel Writer 
 if os.path.exists(output_file):
-    with pd.ExcelWriter(output_file,engine='openpyxl', mode='a') as writer: 
-        # Todo -> Cannot write to same sheet if we run script twice with same procedure... Error with appending
+    with pd.ExcelWriter(output_file,engine='openpyxl', mode='a', if_sheet_exists='replace') as writer: 
         df_combined = existing_frame._append(frame, ignore_index = True)
         final_frame = pd.concat([df_combined, calcFrame], axis=1)
         final_frame.to_excel(writer, sheet_name=procedures[desired_location], index=False)
         
+        total_sheets = len(writer.book.sheetnames)
+
         for i in range(total_sheets):
             workbook = writer.book 
             worksheet = workbook.worksheets[i]
