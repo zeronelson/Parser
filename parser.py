@@ -149,7 +149,7 @@ datum_delta = avg_datum - min_value
 
 
 # Create Data Frame 
-calcFrame = pd.DataFrame(
+calc_frame = pd.DataFrame(
     {
         'Datum Avg': [avg_datum],
         'Datum Min': [min_value],
@@ -161,7 +161,7 @@ calcFrame = pd.DataFrame(
 if os.path.exists(output_file):
     with pd.ExcelWriter(output_file,engine='openpyxl', mode='a', if_sheet_exists='replace') as writer: 
         df_combined = existing_frame._append(frame, ignore_index = True)
-        final_frame = pd.concat([df_combined, calcFrame], axis=1)
+        final_frame = pd.concat([df_combined, calc_frame], axis=1)
         final_frame.to_excel(writer, sheet_name=procedures[desired_location], index=False)
         
         total_sheets = len(writer.book.sheetnames)
@@ -175,7 +175,7 @@ if os.path.exists(output_file):
             worksheet.column_dimensions['J'].width = 12
 else: 
     with pd.ExcelWriter(output_file,engine='openpyxl') as writer: 
-            final_frame = pd.concat([frame, calcFrame], axis=1)
+            final_frame = pd.concat([frame, calc_frame], axis=1)
             final_frame.to_excel(writer, sheet_name=procedures[desired_location], index=False)  
 
             workbook = writer.book 
