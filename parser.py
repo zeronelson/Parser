@@ -54,7 +54,6 @@ def get_desired_location():
     # Cut out space in between words
     desired_location = desired_location.replace(" ","")
 
-print("\n***Enter 0 to quit whenever prompted***")
 get_desired_location()
 
 # Open existing excel sheet otherwise create empty frame 
@@ -67,8 +66,6 @@ except:
 # Can't write to open sheet, so this opens and closes if present 
 try: 
     excel = xw.Book(output_file)
-    # Get current sheet number and add 1 for sheet that will get added 
-    #total_sheets = len(excel.sheet_names) 
     excel.close()
 except:
     pass
@@ -94,9 +91,10 @@ while True:
                 count += 1
                 if (count == 2):
                     print("\nExiting...")
-                    sys.exit()
+                    flag = True
+                    break
                 else:
-                    print("\n***Specified path does not exist***")
+                    print("\n***Invalid path***")
                 
         target_file_path = input("\nPath to JSON file: ")
 
