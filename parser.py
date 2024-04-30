@@ -6,13 +6,9 @@ import sys
 import os
 
 count = 0
-tryPathCounter = 0
 margin = -1000 
 sign = 1
-minValue = 0
-datumTotal = 0
-datumAvg = 0
-outputFile = 'output.xlsx'
+output_file = 'output.xlsx'
 
 # Lists for Data Frame
 moduleList = []
@@ -47,82 +43,85 @@ procedures = {
     "TubeRackHeight" : "Tubes"
 }
 
+def get_desired_location():
+    global desired_location 
+    desired_location = input("\nEnter named position with space between words:  ")
+
+    # Capitalize first letter of each word
+    desired_location = desired_location.title() 
+
+    # Cut out space in between words
+    desired_location = desired_location.replace(" ","")
+
 print("\n***Enter 0 to quit whenever prompted***")
-
-desiredLocation = input("\nEnter named position with space between words:  ")
-
-desiredLocation = desiredLocation.title() 
-
-# Cut out space in between words
-desiredLocation = desiredLocation.replace(" ","")
+get_desired_location()
 
 # Open existing excel sheet otherwise create empty frame 
 try: 
-    existingFrame = pd.read_excel(outputFile, sheet_name=[procedures[desiredLocation]])
+    existing_frame = pd.read_excel(output_file, sheet_name=[procedures[desired_location]])
 except: 
-    existingFrame = pd.DataFrame() 
+    existing_frame = pd.DataFrame() 
 
 # Can't write to open sheet, so this opens and closes if present 
 try: 
-    excel = xw.Book(outputFile)
-    totalSheets = len(excel.sheet_names)
+    excel = xw.Book(output_file)
+    # Get current sheet number and add 1 for sheet that will get added 
+    total_sheets = len(excel.sheet_names) + 1 
     excel.close()
 except:
     pass
 
-while desiredLocation not in offset:
+while desired_location not in offset:
     print("\n***Invalid location***")
-    desiredLocation = input("\nEnter named position with space between words: ")
-    desiredLocation = desiredLocation.title() 
-    desiredLocation = desiredLocation.replace(" ","")
+    get_desired_location()
 
 while True:
-    targetFile = input("\nPath to JSON file: ")
+    target_file_path = input("\nPath to JSON file: ")
 
-    if (targetFile == '0'):
+    if (target_file_path == '0'):
         print("\nExiting...")
         break
 
     # Load JSON as a dictionary 
     while True:
         try: 
-            with open(targetFile, 'r') as file:
+            with open(target_file_path, 'r') as file:
                 data = json.load(file) 
                 break
         except FileNotFoundError:
-                tryPathCounter += 1
-                if (tryPathCounter == 2):
+                count += 1
+                if (count == 2):
                     print("\nExiting...")
                     sys.exit()
                 else:
                     print("\n***Specified path does not exist***")
                     print("\n**One more chance, so make it right**")
                 
-        targetFile = input("\nPath to JSON file: ")
+        target_file_path = input("\nPath to JSON file: ")
 
-        if (targetFile == 0):
+        if (target_file_path == 0):
             break
         
     # Parse module from path
-    splitTargetFile = targetFile.split("\\")
-    module = splitTargetFile[6]
+    target_split = target_file_path.split("\\")
+    module = target_split[6]
 
     # Path to data we want
-    desiredData = round((data['TubeRobotZAxis']['NamedPositions'][desiredLocation]) * 1000)
+    desired_data = round((data['TubeRobotZAxis']['NamedPositions'][desired_location]) * 1000)
 
     # Add values to list to display to excel
     moduleList.append(module)
-    positionValueList.append(desiredData)
-    datumList.append((desiredData + margin) * sign)
+    positionValueList.append(desired_data)
+    datumList.append((desired_data + margin) * sign)
     marginList.append(margin)
     signList.append(sign)
-    offsetList.append(offset[desiredLocation])
+    offsetList.append(offset[desired_location])
     emptyList.append(None)
 
     # Create dictionary that will be sent to excel
     desiredDataFrame = {
         'Module': moduleList,
-        desiredLocation: positionValueList,
+        desired_location: positionValueList,
         'Offset' : offsetList,
         'Margin' : marginList,
         'Sign' : signList,
@@ -150,28 +149,28 @@ calcFrame = pd.DataFrame(
 )
 
 #Create Excel Writer 
-if os.path.exists(outputFile):
-    with pd.ExcelWriter(outputFile,engine='openpyxl', mode='a') as writer: 
+if os.path.exists(output_file):
+    with pd.ExcelWriter(output_file,engine='openpyxl', mode='a') as writer: 
         # Todo -> Cannot write to same sheet if we run script twice with same procedure... Error with appending
-        df_combined = existingFrame._append(frame, ignore_index = True)
-        finalFrame = pd.concat([df_combined, calcFrame], axis=1)
-        finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)
+        df_combined = existing_frame._append(frame, ignore_index = True)
+        final_frame = pd.concat([df_combined, calcFrame], axis=1)
+        final_frame.to_excel(writer, sheet_name=procedures[desired_location], index=False)
         
-        for i in range(totalSheets + 1):
+        for i in range(total_sheets):
             workbook = writer.book 
             worksheet = workbook.worksheets[i]
-            worksheet.column_dimensions['b'].width = len(desiredLocation) + 2
+            worksheet.column_dimensions['b'].width = len(desired_location) + 2
             worksheet.column_dimensions['H'].width = 12
             worksheet.column_dimensions['I'].width = 12
             worksheet.column_dimensions['J'].width = 12
 else: 
-    with pd.ExcelWriter(outputFile,engine='openpyxl') as writer: 
-            finalFrame = pd.concat([frame, calcFrame], axis=1)
-            finalFrame.to_excel(writer, sheet_name=procedures[desiredLocation], index=False)  
+    with pd.ExcelWriter(output_file,engine='openpyxl') as writer: 
+            final_frame = pd.concat([frame, calcFrame], axis=1)
+            final_frame.to_excel(writer, sheet_name=procedures[desired_location], index=False)  
 
             workbook = writer.book 
             worksheet = workbook.worksheets[0]
-            worksheet.column_dimensions['b'].width = len(desiredLocation) + 2 
+            worksheet.column_dimensions['b'].width = len(desired_location) + 2 
             worksheet.column_dimensions['H'].width = 12
             worksheet.column_dimensions['I'].width = 12
             worksheet.column_dimensions['J'].width = 12  
